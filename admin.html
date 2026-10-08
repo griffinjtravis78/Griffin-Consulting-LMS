@@ -13,6 +13,7 @@
     </nav>
 
     <main class="max-w-7xl mx-auto p-6">
+        <!-- Stats Row -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
                 <h3 class="text-slate-400 text-sm font-medium">Total Courses</h3>
@@ -27,15 +28,12 @@
                 <p id="stat-modules" class="text-3xl font-bold mt-2 text-purple-400">0</p>
             </div>
         </div>
-
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-            <h2 class="text-lg font-semibold mb-4">Course & Content Management</h2>
-            <p class="text-slate-400 text-sm">Course creation tools and file upload manager will load here.</p>
-        </div>
+        <!-- Dynamic Course Manager UI injects here via admin.js -->
     </main>
 
     <script type="module">
         import { checkAuth, supabase } from './assets/js/app.js';
+        import './assets/js/admin.js'; // Imports your admin course creation and file upload manager logic
         
         // Ensure only admins can view this page
         checkAuth('admin');
