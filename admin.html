@@ -3,45 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Griffin Consulting LMS</title>
+    <title>Admin Portal - Griffin Consulting LMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-blue-400">Griffin Consulting LMS — Admin Portal</h1>
-        <button id="logout-btn" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600 hover:text-white rounded-lg text-sm transition">Sign Out</button>
-    </nav>
-
-    <main class="max-w-7xl mx-auto p-6">
-        <!-- Stats Row -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h3 class="text-slate-400 text-sm font-medium">Total Courses</h3>
-                <p id="stat-courses" class="text-3xl font-bold mt-2 text-blue-400">0</p>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+    <div>
+        <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center" aria-label="Main Navigation">
+            <h1 class="text-xl font-bold text-blue-400">Griffin Consulting LMS — Admin Portal</h1>
+            <div class="flex items-center gap-4">
+                <div class="flex gap-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
+                    <button onclick="window.switchAdminTab('courses')" id="tab-btn-courses" class="px-3 py-1.5 text-xs font-semibold rounded bg-blue-600 text-white transition focus:outline-none focus:ring-2 focus:ring-blue-500">Courses & Content</button>
+                    <button onclick="window.switchAdminTab('students')" id="tab-btn-students" class="px-3 py-1.5 text-xs font-semibold rounded text-slate-300 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-blue-500">Provision Student</button>
+                    <button onclick="window.switchAdminTab('reports')" id="tab-btn-reports" class="px-3 py-1.5 text-xs font-semibold rounded text-slate-300 hover:text-white transition focus:outline-none focus:ring-2 focus:ring-blue-500">Compliance Reports</button>
+                </div>
+                <button id="logout-btn" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600 hover:text-white rounded-lg text-sm transition focus:outline-none focus:ring-2 focus:ring-red-500">Sign Out</button>
             </div>
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h3 class="text-slate-400 text-sm font-medium">Enrolled Participants</h3>
-                <p id="stat-students" class="text-3xl font-bold mt-2 text-emerald-400">0</p>
-            </div>
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h3 class="text-slate-400 text-sm font-medium">Active Modules</h3>
-                <p id="stat-modules" class="text-3xl font-bold mt-2 text-purple-400">0</p>
-            </div>
-        </div>
-        <!-- Dynamic Course Manager UI injects here via admin.js -->
-    </main>
+        </nav>
 
-    <script type="module">
-        import { checkAuth, supabase } from './assets/js/app.js';
-        import './assets/js/admin.js'; // Imports your admin course creation and file upload manager logic
-        
-        // Ensure only admins can view this page
-        checkAuth('admin');
+        <main class="max-w-7xl mx-auto p-6">
+            <!-- Stats Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                    <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Courses</h3>
+                    <p id="stat-total-courses" class="text-3xl font-bold text-blue-400 mt-2">0</p>
+                </div>
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                    <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider">Enrolled Participants</h3>
+                    <p id="stat-total-students" class="text-3xl font-bold text-emerald-400 mt-2">0</p>
+                </div>
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                    <h3 class="text-xs font-medium text-slate-400 uppercase tracking-wider">Active Modules</h3>
+                    <p id="stat-total-modules" class="text-3xl font-bold text-purple-400 mt-2">0</p>
+                </div>
+            </div>
 
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await supabase.auth.signOut();
-            window.location.href = './index.html';
-        });
-    </script>
-</body>
-</html>
+            <!-- TAB 1: COURSES & CONTENT MANAGEMENT -->
+            <div id="admin-tab-courses" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Create Course Form -->
+                <div class="lg:col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit">
+                    <h2 class="text-lg font-semibold mb-4 text-blue-400">Create New Course</h2>
+                    <form id="create-course-form" class="space-y-4">
+                        <div>
+                            <label for="course-title" class="block text-xs font-medium text-slate-300 mb-1">Course Title</label>
+                            <input type="text" id="course-title" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-blue-500" placeholder="e.g., Public Sector Leadership">
+                        </div>
+                        <div>
+                            <label for="course-desc" class="block text-xs font-medium text-slate-300 mb-1">Description</label>
+                            <textarea id="course-desc" rows="3" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-blue-500" placeholder="Course overview..."></textarea>
+                        </div>
+                        <div>
+                            <label for="course-ceu" class="block text-xs font-medium text-slate-300 mb-1">CEU Credits</label>
+                            <input type="number" step="0.25" min="0" id="course-ceu" value="0.00" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100 focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="course-thumbnail" class="block text-xs font-medium text-slate-300 mb-1">Course Thumbnail Image</label>
+                            <input type="file" id="course-thumbnail" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500">
+                        </div>
+                        <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">Create Course</button>
+                    </form>
+                </div>
+
+                <!-- Active Courses List & Lesson Uploader -->
+                <div class="lg:col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <h2 class="text-lg font-semibold mb-4 text-slate-200">Active Courses & Lessons</h2>
+                    <div id="admin-course-list" class="space-y-6">
+                        <p class="text-slate-400 text-sm">Loading courses...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: STUDENT PROVISIONING PORTAL -->
+            <div id="admin-tab-students" class="hidden bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-xl font-bold text-blue-400 mb-2">Student Provisioning & Licensing Portal</h2>
+                <p class="text-slate-400 text-sm mb-6">Create new student accounts, assign unique IDs, record residential addresses, multiple agent licenses, and employer organizations directly.</p>
+                
+                <div id="student-success-msg" class="hidden mb-4 p-3 bg-emerald-900/40 border border-emerald-500 text-emerald-300 text-xs rounded-lg"></div>
+                <div id="student-error-msg" class="hidden mb-4 p-3 bg-red-900/40 border border-red-500 text-red-300 text-xs rounded-lg"></div>
+
+                <form id="provision-student-form" class="space-y-6">
+                    <!-- Basic Credentials -->
+                    <div class="border-b border-slate-700 pb-4">
+                        <h3 class="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">1. Account Credentials & Unique ID</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="prov-email" class="block text-xs font-medium text-slate-300 mb-1">Email Address *</label>
+                                <input type="email" id="prov-email" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="student@domain.com">
+                            </div>
+                            <div>
+                                <label for="prov-pass" class="block text-xs font-medium text-slate-300 mb-1">Initial Password *</label>
+                                <input type="password" id="prov-pass" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="••••••••">
+                            </div>
+                            <div>
+                                <label for="prov-uid" class="block text-xs font-medium text-slate-300 mb-1">Unique Student Identifier *</label>
+                                <input type="text" id="prov-uid" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="e.g., GC-SID-2026-001">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Information & Address -->
+                    <div class="border-b border-slate-700 pb-4">
+                        <h3 class="text-sm font-semibold text-slate-200 mb-3 uppercase tracking-wider">2. Personal Information & Residential Address</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label for="prov-firstname" class="block text-xs font-medium text-slate-300 mb-1">First Name *</label>
+                                <input type="text" id="prov-firstname" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100">
+                            </div>
+                            <div>
+                                <label for="prov-lastname" class="block text-xs font-medium text-slate-300 mb-1">Last Name *</label>
+                                <input type="text" id="prov-lastname" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100">
+                            </div>
+                            <div>
+                                <label for="prov-phone" class="block text-xs font-medium text-slate-300 mb-1">Phone Number (Format: (###) ###-####) *</label>
+                                <input type="text" id="prov-phone" required pattern="\(\d{3}\) \d{3}-\d{4}" placeholder="(555) 123-4567" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100">
+                            </div>
+                            <div>
+                                <label for="prov-street" class="block text-xs font-medium text-slate-300 mb-1">Street Address *</label>
+                                <input type="text" id="prov-street" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                                <label for="prov-street2" class="block text-xs font-medium text-slate-300 mb-1">Street Address 2</label>
+                                <input type="text" id="prov-street2" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="Apt, Suite, Bldg">
+                            </div>
+                            <div>
+                                <label for="prov-city" class="block text-xs font-medium text-slate-300 mb-1">City *</label>
+                                <input type="text" id="prov-city" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100">
+                            </div>
+                            <div>
+                                <label for="prov-state" class="block text-xs font-medium text-slate-300 mb-1">State *</label>
+                                <input type="text" id="prov-state" required class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="MO">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="prov-zip" class="block text-xs font-medium text-slate-300 mb-1">Zip Code *</label>
+                                <input type="text" id="prov-zip" required class="w-full px-3 py-2 bg-slate-900 border border-slate-
