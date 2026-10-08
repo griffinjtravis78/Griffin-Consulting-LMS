@@ -6,47 +6,66 @@
     <title>Participant Portal - Griffin Consulting LMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold text-blue-400">Griffin Consulting LMS — Student Portal</h1>
-        <button id="logout-btn" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600 hover:text-white rounded-lg text-sm transition">Sign Out</button>
-    </nav>
-
-    <main class="max-w-7xl mx-auto p-6">
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 flex justify-between items-center">
-            <div>
-                <h2 id="welcome-banner" class="text-2xl font-bold">Welcome back, Learner!</h2>
-                <p class="text-slate-400 text-sm mt-1">Select an active course below to access your training modules and media.</p>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between">
+    <div>
+        <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center" aria-label="Main Navigation">
+            <h1 class="text-xl font-bold text-blue-400">Griffin Consulting LMS — Student Portal</h1>
+            <div class="flex items-center gap-3">
+                <button onclick="window.openTranscriptModal()" class="px-4 py-2 bg-blue-600/20 text-blue-400 border border-blue-600/30 hover:bg-blue-600 hover:text-white rounded-lg text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">View Official Transcript</button>
+                <button id="logout-btn" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600 hover:text-white rounded-lg text-sm transition focus:outline-none focus:ring-2 focus:ring-red-500">Sign Out</button>
             </div>
-        </div>
+        </nav>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Enrolled Courses List -->
-            <div class="lg:col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit">
-                <h3 class="text-lg font-semibold mb-4 text-blue-400">Available Courses</h3>
-                <div id="student-course-list" class="space-y-3">
-                    <p class="text-slate-400 text-sm">Loading courses...</p>
+        <main class="max-w-7xl mx-auto p-6">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 flex justify-between items-center">
+                <div>
+                    <h2 id="welcome-banner" class="text-2xl font-bold">Welcome back, Learner!</h2>
+                    <p class="text-slate-400 text-sm mt-1">Select an active course below to access your training modules, media, and earn CEU credits.</p>
                 </div>
             </div>
 
-            <!-- Course Player / Lesson View Area -->
-            <div id="lesson-viewer-container" class="lg:col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h3 class="text-lg font-semibold mb-4 text-slate-300">Course Player</h3>
-                <div id="active-lesson-display" class="text-center py-16 text-slate-500">
-                    <p class="text-sm">Select a course and lesson from the left to start learning.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Enrolled Courses List -->
+                <div class="lg:col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit">
+                    <h3 class="text-lg font-semibold mb-4 text-blue-400">Available Courses</h3>
+                    <div id="student-course-list" class="space-y-4">
+                        <p class="text-slate-400 text-sm">Loading courses...</p>
+                    </div>
+                </div>
+
+                <!-- Course Player / Lesson View Area -->
+                <div id="lesson-viewer-container" class="lg:col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700">
+                    <h3 class="text-lg font-semibold mb-4 text-slate-300">Course Player</h3>
+                    <div id="active-lesson-display" class="text-center py-16 text-slate-500">
+                        <p class="text-sm">Select a course and lesson from the left to start learning.</p>
+                    </div>
                 </div>
             </div>
+        </main>
+    </div>
+
+    <!-- Universal Legal Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 text-xs py-6">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+            <p>© 2026 Griffin Consulting. All rights reserved. Strategy | Performance | People.</p>
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button onclick="window.openLegalModal('terms')" class="hover:text-blue-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Terms of Service</button>
+                <button onclick="window.openLegalModal('privacy')" class="hover:text-blue-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Privacy Policy</button>
+                <button onclick="window.openLegalModal('ip')" class="hover:text-blue-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">IP & Copyright</button>
+                <button onclick="window.openLegalModal('outcomes')" class="hover:text-blue-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Outcome Disclaimer</button>
+                <button onclick="window.openLegalModal('accessibility')" class="hover:text-blue-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1">Accessibility</button>
+            </div>
         </div>
-    </main>
+    </footer>
 
     <script type="module">
         import { checkAuth, supabase } from './assets/js/app.js';
-        import './assets/js/student.js'; // Imports student learning and viewer logic
+        import './assets/js/student.js';
         
         (async () => {
             const profile = await checkAuth('student');
             if (profile) {
-                document.getElementById('welcome-banner').textContent = `Welcome back, ${profile.email}!`;
+                document.getElementById('welcome-banner').textContent = `Welcome back, ${profile.first_name || profile.email}!`;
             }
         })();
 
