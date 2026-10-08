@@ -13,24 +13,36 @@
     </nav>
 
     <main class="max-w-7xl mx-auto p-6">
-        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6">
-            <h2 id="welcome-banner" class="text-2xl font-bold">Welcome back, Learner!</h2>
-            <p class="text-slate-400 text-sm mt-1">Select an active course below to continue your training progress.</p>
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6 flex justify-between items-center">
+            <div>
+                <h2 id="welcome-banner" class="text-2xl font-bold">Welcome back, Learner!</h2>
+                <p class="text-slate-400 text-sm mt-1">Select an active course below to access your training modules and media.</p>
+            </div>
         </div>
 
-        <div id="course-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Dynamic courses populate here -->
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-                <h3 class="text-lg font-semibold text-blue-300">Sample Training Module</h3>
-                <p class="text-slate-400 text-sm mt-2">Loading enrolled courses from Supabase...</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Enrolled Courses List -->
+            <div class="lg:col-span-1 bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit">
+                <h3 class="text-lg font-semibold mb-4 text-blue-400">Available Courses</h3>
+                <div id="student-course-list" class="space-y-3">
+                    <p class="text-slate-400 text-sm">Loading courses...</p>
+                </div>
+            </div>
+
+            <!-- Course Player / Lesson View Area -->
+            <div id="lesson-viewer-container" class="lg:col-span-2 bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h3 class="text-lg font-semibold mb-4 text-slate-300">Course Player</h3>
+                <div id="active-lesson-display" class="text-center py-16 text-slate-500">
+                    <p class="text-sm">Select a course and lesson from the left to start learning.</p>
+                </div>
             </div>
         </div>
     </main>
 
     <script type="module">
         import { checkAuth, supabase } from './assets/js/app.js';
+        import './assets/js/student.js'; // Imports student learning and viewer logic
         
-        // Ensure only students can view this page
         (async () => {
             const profile = await checkAuth('student');
             if (profile) {
