@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Griffin Consulting LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <nav class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-blue-400">Griffin Consulting LMS — Admin Portal</h1>
+        <button id="logout-btn" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600 hover:text-white rounded-lg text-sm transition">Sign Out</button>
+    </nav>
+
+    <main class="max-w-7xl mx-auto p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h3 class="text-slate-400 text-sm font-medium">Total Courses</h3>
+                <p id="stat-courses" class="text-3xl font-bold mt-2 text-blue-400">0</p>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h3 class="text-slate-400 text-sm font-medium">Enrolled Participants</h3>
+                <p id="stat-students" class="text-3xl font-bold mt-2 text-emerald-400">0</p>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h3 class="text-slate-400 text-sm font-medium">Active Modules</h3>
+                <p id="stat-modules" class="text-3xl font-bold mt-2 text-purple-400">0</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+            <h2 class="text-lg font-semibold mb-4">Course & Content Management</h2>
+            <p class="text-slate-400 text-sm">Course creation tools and file upload manager will load here.</p>
+        </div>
+    </main>
+
+    <script type="module">
+        import { checkAuth, supabase } from './assets/js/app.js';
+        
+        // Ensure only admins can view this page
+        checkAuth('admin');
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = './index.html';
+        });
+    </script>
+</body>
+</html>
