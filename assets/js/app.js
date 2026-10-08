@@ -1,8 +1,8 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// TODO: Replace these with your actual Supabase project credentials from Project Settings -> API
-const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+// Configured with your project ID: anwxrxievuluqsdjtaig
+const SUPABASE_URL = 'https://anwxrxievuluqsdjtaig.supabase.co';
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -30,7 +30,7 @@ if (loginForm) {
         }
 
         // Check user role in the profiles table
-        const { data: profile, profileError } = await supabase
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', data.user.id)
