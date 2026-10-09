@@ -84,7 +84,7 @@ async function fetchAdminCourses() {
                         <div class="space-y-2">
                             ${courseLessons.length > 0 ? courseLessons.map(l => `
                                 <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 text-xs">
-                                    <span class="text-slate-200">📄 [${l.lesson_type.toUpperCase()}] ${l.title}</span>
+                                    <span class="text-slate-200">📄 [${l.lesson_type.toUpperCase()}]${l.title}</span>
                                     <div class="flex gap-3">
                                         <a href="${l.content_url}" target="_blank" class="text-blue-400 hover:underline">View Asset</a>
                                         <button onclick="window.deleteLesson(${l.id})" class="text-red-400 hover:underline">Remove</button>
@@ -186,8 +186,12 @@ window.handleUploadLesson = async function(e, courseId) {
 window.deleteLesson = async function(lessonId) {
     if (!confirm('Remove this lesson module?')) return;
     const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
-    if (error) alert('Error removing lesson: ' + error.message);
-    else { loadDashboardStats(); fetchAdminCourses(); }
+    if (error) {
+        alert('Error removing lesson: ' + error.message);
+    } else {
+        loadDashboardStats();
+        fetchAdminCourses();
+    }
 };
 
 // --- STUDENT PROVISIONING LOGIC ---
@@ -218,4 +222,150 @@ window.addOrgRow = function() {
     row.innerHTML = `
         <div class="flex justify-between items-center">
             <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Additional Organization</span>
-            <button type="button" onclick="this.closest('.org-row').remove()" class="px-2.5 py-1 bg-red-600/
+            <button type="button" onclick="this.closest('.org-row').remove()" class="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded text-xs transition">Remove Org</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Organization Name</label>
+                <input type="text" required class="org-name-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="Agency or Company Name">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Org Phone</label>
+                <input type="text" required class="org-phone-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="e.g. 555-987-6543">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Org Street Address</label>
+                <input type="text" required class="org-street-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100">
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Org Street 2</label>
+                <input type="text" class="org-street2-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="Suite, Bldg">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">City</label>
+                <input type="text" required class="org-city-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">State</label>
+                <input type="text" required class="org-state-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="MO">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Zip Code</label>
+                <input type="text" required class="org-zip-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100">
+            </div>
+        </div>
+    `;
+    container.appendChild(row);
+};
+
+document.getElementById('provision-student-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const successBox = document.getElementById('student-success-msg');
+    const errorBox = document.getElementById('student-error-msg');
+    successBox.classList.add('hidden');
+    errorBox.classList.add('hidden');
+
+    const email = document.getElementById('prov-email').value;
+    const password = document.getElementById('prov-pass').value;
+    const unique_identifier = document.getElementById('prov-uid').value;
+    const first_name = document.getElementById('prov-firstname').value;
+    const last_name = document.getElementById('prov-lastname').value;
+    const phone = document.getElementById('prov-phone').value;
+    const street_address = document.getElementById('prov-street').value;
+    const street_address_2 = document.getElementById('prov-street2').value;
+    const city = document.getElementById('prov-city').value;
+    const state = document.getElementById('prov-state').value;
+    const zip = document.getElementById('prov-zip').value;
+
+    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+    if (authError) {
+        errorBox.textContent = 'Auth Error: ' + authError.message;
+        errorBox.classList.remove('hidden');
+        return;
+    }
+
+    const userId = authData.user.id;
+
+    const { error: profileError } = await supabase.from('profiles').upsert([{
+        id: userId, email, role: 'student', unique_identifier, first_name, last_name, phone, street_address, street_address_2, city, state, zip
+    }]);
+
+    if (profileError) {
+        errorBox.textContent = 'Profile Error: ' + profileError.message;
+        errorBox.classList.remove('hidden');
+        return;
+    }
+
+    const agentRows = document.querySelectorAll('.agent-row');
+    for (let row of agentRows) {
+        const agent_id = row.querySelector('.agent-id-input').value;
+        const agent_state = row.querySelector('.agent-state-input').value;
+        await supabase.from('student_agent_licenses').insert([{ user_id: userId, agent_id, agent_state }]);
+    }
+
+    const orgRows = document.querySelectorAll('.org-row');
+    for (let row of orgRows) {
+        const org_name = row.querySelector('.org-name-input').value;
+        const org_phone = row.querySelector('.org-phone-input').value;
+        const org_street = row.querySelector('.org-street-input').value;
+        const org_street_2 = row.querySelector('.org-street2-input').value;
+        const org_city = row.querySelector('.org-city-input').value;
+        const org_state = row.querySelector('.org-state-input').value;
+        const org_zip = row.querySelector('.org-zip-input').value;
+        await supabase.from('student_organizations').insert([{ user_id: userId, org_name, org_phone, org_street, org_street_2, org_city, org_state, org_zip }]);
+    }
+
+    successBox.textContent = `Student ${first_name} ${last_name} (ID: ${unique_identifier}) successfully provisioned!`;
+    successBox.classList.remove('hidden');
+    document.getElementById('provision-student-form').reset();
+    loadDashboardStats();
+    fetchComplianceReports();
+});
+
+// --- COMPLIANCE REPORTS LOGIC ---
+async function fetchComplianceReports() {
+    const tbody = document.getElementById('compliance-report-tbody');
+    const { data: completions, error } = await supabase
+        .from('student_completions')
+        .select('completed_at, courses(title, ceu_credits), profiles(first_name, last_name, unique_identifier)')
+        .order('completed_at', { ascending: false });
+
+    if (error || !completions || completions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500 italic">No course completions recorded yet.</td></tr>`;
+        return;
+    }
+
+    complianceRecords = completions;
+
+    tbody.innerHTML = completions.map(c => `
+        <tr class="hover:bg-slate-900/50">
+            <td class="p-3">${c.profiles?.first_name || 'N/A'}</td>
+            <td class="p-3">${c.profiles?.last_name || 'N/A'}</td>
+            <td class="p-3 font-mono text-blue-400">${c.profiles?.unique_identifier || 'N/A'}</td>
+            <td class="p-3 font-semibold">${c.courses?.title || 'N/A'}</td>
+            <td class="p-3">${c.courses?.ceu_credits || 0} CEUs</td>
+            <td class="p-3 text-slate-400">${new Date(c.completed_at).toLocaleDateString()}</td>
+        </tr>
+    `).join('');
+}
+
+window.exportComplianceCSV = function() {
+    if (!complianceRecords || complianceRecords.length === 0) {
+        alert('No compliance data available to export.');
+        return;
+    }
+
+    let csv = 'Student First Name,Student Last Name,Unique Student ID,Course Completed,CEUs,Date Completed\n';
+    complianceRecords.forEach(c => {
+        csv += `"${c.profiles?.first_name || ''}","${c.profiles?.last_name || ''}","${c.profiles?.unique_identifier || ''}","${c.courses?.title || ''}","${c.courses?.ceu_credits || 0}","${new Date(c.completed_at).toLocaleDateString()}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `Griffin_Consulting_Compliance_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    a.click();
+};
