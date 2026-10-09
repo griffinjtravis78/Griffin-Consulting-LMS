@@ -93,15 +93,17 @@ async function fetchAdminCourses() {
                             `).join('') : '<p class="text-xs text-slate-500 italic">No lessons added to this course yet.</p>'}
                         </div>
 
-                        <!-- Add Lesson Inline Form (Netlify URL Workflow) -->
+                        <!-- Add Lesson Inline Form (Hybrid URL & File Upload Workflow) -->
                         <form onsubmit="window.handleUploadLesson(event, ${course.id})" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
                             <input type="text" id="lesson-title-${course.id}" placeholder="Lesson Title" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
-                            <select id="lesson-type-${course.id}" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
+                            <select id="lesson-type-${course.id}" onchange="window.toggleLessonInput(${course.id})" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
                                 <option value="scorm">SCORM / HTML5 (Netlify URL)</option>
                                 <option value="video">Video (MP4 URL)</option>
-                                <option value="pdf">PDF Document (URL)</option>
+                                <option value="pdf">PDF Document (File Upload)</option>
                             </select>
-                            <input type="text" id="lesson-url-${course.id}" placeholder="Paste Netlify URL (https://...)" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
+                            <div id="lesson-input-container-${course.id}">
+                                <input type="text" id="lesson-url-${course.id}" placeholder="Paste Netlify URL (https://...)" required class="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
+                            </div>
                             <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">Add Module</button>
                         </form>
                     </div>
@@ -113,6 +115,18 @@ async function fetchAdminCourses() {
         container.innerHTML = `<p class="text-red-400 text-sm italic">Error: ${err.message}</p>`;
     }
 }
+
+// Dynamic Input Toggle between URL and File Upload
+window.toggleLessonInput = function(courseId) {
+    const typeSelect = document.getElementById(`lesson-type-${courseId}`);
+    const container = document.getElementById(`lesson-input-container-${courseId}`);
+    
+    if (typeSelect.value === 'pdf') {
+        container.innerHTML = `<input type="file" id="lesson-file-${courseId}" accept=".pdf" required class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500">`;
+    } else {
+        container.innerHTML = `<input type="text" id="lesson-url-${courseId}" placeholder="Paste Netlify URL (https://...)" required class="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">`;
+    }
+};
 
 // Create Course Form Handler
 document.getElementById('create-course-form').addEventListener('submit', async (e) => {
@@ -158,12 +172,34 @@ window.handleUploadLesson = async function(e, courseId) {
     e.preventDefault();
     const title = document.getElementById(`lesson-title-${courseId}`).value;
     const lesson_type = document.getElementById(`lesson-type-${courseId}`).value;
-    const urlInput = document.getElementById(`lesson-url-${courseId}`);
-    const content_url = urlInput.value.trim();
+    
+    let content_url = '';
 
-    if (!content_url) {
-        alert('Please provide a valid content URL.');
-        return;
+    if (lesson_type === 'pdf') {
+        const fileInput = document.getElementById(`lesson-file-${courseId}`);
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('Please select a PDF file to upload.');
+            return;
+        }
+
+        const filePath = `lessons/${Date.now()}_${file.name}`;
+        const { error: uploadErr } = await supabase.storage.from('lms-content').upload(filePath, file);
+        
+        if (uploadErr) {
+            alert('Error uploading file: ' + uploadErr.message);
+            return;
+        }
+
+        const { data: urlData } = supabase.storage.from('lms-content').getPublicUrl(filePath);
+        content_url = urlData.publicUrl;
+    } else {
+        const urlInput = document.getElementById(`lesson-url-${courseId}`);
+        content_url = urlInput.value.trim();
+        if (!content_url) {
+            alert('Please provide a valid content URL.');
+            return;
+        }
     }
 
     const { error: dbError } = await supabase.from('lessons').insert([
