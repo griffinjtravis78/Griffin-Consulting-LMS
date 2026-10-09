@@ -162,7 +162,7 @@ window.handleUploadLesson = async function(e, courseId) {
     let content_url = '';
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    // If it's a SCORM zip package, automatically unpack it and upload its contents
+    // If it's a SCORM zip package, automatically unpack it and upload its contents with correct MIME types
     if (lesson_type === 'scorm' && file.name.endsWith('.zip')) {
         try {
             submitBtn.textContent = 'Unpacking & Uploading SCORM...';
@@ -180,11 +180,25 @@ window.handleUploadLesson = async function(e, courseId) {
                 const fileData = await zipEntry.async('blob');
                 const storagePath = `courses/${courseId}/scorm_${folderTimestamp}/${relativePath}`;
                 
+                // Explicitly set correct content type so HTML/CSS/JS render interactively
+                let contentType = 'application/octet-stream';
+                const lowerPath = relativePath.toLowerCase();
+                if (lowerPath.endsWith('.html') || lowerPath.endsWith('.htm')) contentType = 'text/html';
+                else if (lowerPath.endsWith('.css')) contentType = 'text/css';
+                else if (lowerPath.endsWith('.js')) contentType = 'application/javascript';
+                else if (lowerPath.endsWith('.png')) contentType = 'image/png';
+                else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) contentType = 'image/jpeg';
+                else if (lowerPath.endsWith('.svg')) contentType = 'image/svg+xml';
+                else if (lowerPath.endsWith('.json')) contentType = 'application/json';
+
                 const { error: storageErr } = await supabase.storage
                     .from('lms-content')
-                    .upload(storagePath, fileData, { upsert: true });
+                    .upload(storagePath, fileData, { 
+                        upsert: true,
+                        contentType: contentType 
+                    });
 
-                if (!storageErr && (relativePath.toLowerCase() === 'index.html' || relativePath.toLowerCase().endsWith('/index.html'))) {
+                if (!storageErr && (lowerPath === 'index.html' || lowerPath.endsWith('/index.html'))) {
                     const { data: publicUrlData } = supabase.storage.from('lms-content').getPublicUrl(storagePath);
                     indexHtmlPath = publicUrlData.publicUrl;
                 }
@@ -208,6 +222,8 @@ window.handleUploadLesson = async function(e, courseId) {
 
         if (uploadError) {
             alert('Upload failed: ' + uploadError.message);
+            submitBtn.textContent = 'Add Module';
+            submitBtn.disabled = false;
             return;
         }
 
