@@ -29,33 +29,44 @@ window.switchStudentTab = function(tabName) {
 
 async function fetchStudentCourses() {
     const container = document.getElementById('student-course-list');
-    const { data: courses, error } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
+    try {
+        const { data: courses, error } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
+        console.log('Student Courses Fetch:', { courses, error });
 
-    if (error || !courses || courses.length === 0) {
-        container.innerHTML = `<p class="text-slate-400 text-sm">No courses available at this time.</p>`;
-        return;
-    }
+        if (error) {
+            container.innerHTML = `<p class="text-red-400 text-sm">Error: ${error.message}</p>`;
+            return;
+        }
 
-    const { data: allLessons } = await supabase.from('lessons').select('*');
+        if (!courses || courses.length === 0) {
+            container.innerHTML = `<p class="text-slate-400 text-sm">No courses available at this time.</p>`;
+            return;
+        }
 
-    allCourses = courses.map(c => ({
-        ...c,
-        lessons: allLessons ? allLessons.filter(l => l.course_id === c.id) : []
-    }));
+        const { data: allLessons } = await supabase.from('lessons').select('*');
 
-    container.innerHTML = allCourses.map(course => `
-        <div class="bg-slate-900 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer overflow-hidden" onclick="window.selectCourse(${course.id})">
-            ${course.thumbnail_url ? `<img src="${course.thumbnail_url}" alt="${course.title}" class="w-full h-32 object-cover border-b border-slate-700">` : ''}
-            <div class="p-4">
-                <h4 class="font-bold text-slate-200 text-sm">${course.title}</h4>
-                <p class="text-xs text-slate-400 mt-1 line-clamp-2">${course.description || 'No description.'}</p>
-                <div class="flex justify-between items-center mt-3">
-                    <span class="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">${course.lessons.length} Modules</span>
-                    <span class="text-xs text-emerald-400 font-semibold">${course.ceu_credits ? course.ceu_credits + ' CEUs' : ''}</span>
+        allCourses = courses.map(c => ({
+            ...c,
+            lessons: allLessons ? allLessons.filter(l => l.course_id === c.id) : []
+        }));
+
+        container.innerHTML = allCourses.map(course => `
+            <div class="bg-slate-900 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer overflow-hidden" onclick="window.selectCourse(${course.id})">
+                ${course.thumbnail_url ? `<img src="${course.thumbnail_url}" alt="${course.title}" class="w-full h-32 object-cover border-b border-slate-700">` : ''}
+                <div class="p-4">
+                    <h4 class="font-bold text-slate-200 text-sm">${course.title}</h4>
+                    <p class="text-xs text-slate-400 mt-1 line-clamp-2">${course.description || 'No description.'}</p>
+                    <div class="flex justify-between items-center mt-3">
+                        <span class="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">${course.lessons.length} Modules</span>
+                        <span class="text-xs text-emerald-400 font-semibold">${course.ceu_credits ? course.ceu_credits + ' CEUs' : ''}</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+    } catch (err) {
+        console.error('Exception in fetchStudentCourses:', err);
+        container.innerHTML = `<p class="text-red-400 text-sm">Error: ${err.message}</p>`;
+    }
 }
 
 window.selectCourse = async function(courseId) {
@@ -240,7 +251,6 @@ window.openTranscriptModal = async function() {
         .select('completed_at, course_id')
         .eq('user_id', currentStudentProfile.id);
 
-    // Fetch course details independently to guarantee clean rendering
     const { data: courses } = await supabase.from('courses').select('*');
     const courseMap = {};
     if (courses) {
