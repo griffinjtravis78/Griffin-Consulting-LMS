@@ -162,7 +162,7 @@ window.handleUploadLesson = async function(e, courseId) {
     let content_url = '';
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    // If it's a SCORM zip package, automatically unpack it and upload its contents with correct MIME types
+    // If it's a SCORM zip package, automatically unpack it and upload its contents with render routing
     if (lesson_type === 'scorm' && file.name.endsWith('.zip')) {
         try {
             submitBtn.textContent = 'Unpacking & Uploading SCORM...';
@@ -180,7 +180,6 @@ window.handleUploadLesson = async function(e, courseId) {
                 const fileData = await zipEntry.async('blob');
                 const storagePath = `courses/${courseId}/scorm_${folderTimestamp}/${relativePath}`;
                 
-                // Explicitly set correct content type so HTML/CSS/JS render interactively
                 let contentType = 'application/octet-stream';
                 const lowerPath = relativePath.toLowerCase();
                 if (lowerPath.endsWith('.html') || lowerPath.endsWith('.htm')) contentType = 'text/html';
@@ -200,7 +199,8 @@ window.handleUploadLesson = async function(e, courseId) {
 
                 if (!storageErr && (lowerPath === 'index.html' || lowerPath.endsWith('/index.html'))) {
                     const { data: publicUrlData } = supabase.storage.from('lms-content').getPublicUrl(storagePath);
-                    indexHtmlPath = publicUrlData.publicUrl;
+                    // Use Supabase render route to ensure browser executes HTML interactively
+                    indexHtmlPath = publicUrlData.publicUrl.replace('/object/public/', '/object/render/public/');
                 }
             }
 
