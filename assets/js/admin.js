@@ -16,6 +16,7 @@ window.switchAdminTab = function(tabName) {
     document.getElementById(`tab-btn-${tabName}`).className = 'px-3 py-1.5 text-xs font-semibold rounded bg-blue-600 text-white transition';
 };
 
+// Verify admin authentication on load
 (async () => {
     const user = await checkAuth('admin');
     if (user) {
@@ -149,7 +150,7 @@ window.deleteCourse = async function(courseId) {
     else { loadDashboardStats(); fetchAdminCourses(); }
 };
 
-// AUTOMATED LESSON & SCORM ZIP EXTRACTOR HANDLER
+// Automated Lesson & SCORM ZIP Extractor Handler
 window.handleUploadLesson = async function(e, courseId) {
     e.preventDefault();
     const title = document.getElementById(`lesson-title-${courseId}`).value;
@@ -162,7 +163,6 @@ window.handleUploadLesson = async function(e, courseId) {
     let content_url = '';
     const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    // If it's a SCORM zip package, automatically unpack it and upload its contents with render routing
     if (lesson_type === 'scorm' && file.name.endsWith('.zip')) {
         try {
             submitBtn.textContent = 'Unpacking & Uploading SCORM...';
@@ -173,7 +173,6 @@ window.handleUploadLesson = async function(e, courseId) {
             const folderTimestamp = Date.now();
             let indexHtmlPath = '';
 
-            // Loop through every file inside the zip and upload to Supabase Storage
             for (const [relativePath, zipEntry] of Object.entries(zipContent.files)) {
                 if (zipEntry.dir) continue;
 
@@ -199,8 +198,8 @@ window.handleUploadLesson = async function(e, courseId) {
 
                 if (!storageErr && (lowerPath === 'index.html' || lowerPath.endsWith('/index.html'))) {
                     const { data: publicUrlData } = supabase.storage.from('lms-content').getPublicUrl(storagePath);
-                    // Automatically convert standard public endpoint to Supabase render route
-                    indexHtmlPath = publicUrlData.publicUrl.replace('/object/public/', '/object/render/public/');
+                    // Use the correct Supabase render route path
+                    indexHtmlPath = publicUrlData.publicUrl.replace('/storage/v1/object/public/', '/storage/v1/render/public/');
                 }
             }
 
@@ -216,7 +215,6 @@ window.handleUploadLesson = async function(e, courseId) {
             return;
         }
     } else {
-        // Standard upload for MP4 or PDF
         const filePath = `courses/${courseId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage.from('lms-content').upload(filePath, file);
 
