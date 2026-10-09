@@ -36,62 +36,67 @@ async function loadDashboardStats() {
     document.getElementById('stat-total-modules').textContent = lessonCount || 0;
 }
 
-// Fetch and Render Courses in Admin Portal
+// Fetch and Render Courses in Admin Portal (Independent Queries for Robustness)
 async function fetchAdminCourses() {
     const container = document.getElementById('admin-course-list');
-    const { data: courses, error } = await supabase.from('courses').select('*, lessons(*)').order('created_at', { ascending: false });
+    const { data: courses, error } = await supabase.from('courses').select('*').order('created_at', { ascending: false });
 
     if (error || !courses || courses.length === 0) {
         container.innerHTML = `<p class="text-slate-400 text-sm italic">No courses created yet. Use the form to add your first course.</p>`;
         return;
     }
 
-    container.innerHTML = courses.map(course => `
-        <div class="bg-slate-900 p-5 rounded-xl border border-slate-700 space-y-4">
-            <div class="flex justify-between items-start">
-                <div class="flex gap-4 items-center">
-                    ${course.thumbnail_url ? `<img src="${course.thumbnail_url}" alt="${course.title}" class="w-16 h-16 rounded-lg object-cover border border-slate-700">` : ''}
-                    <div>
-                        <h3 class="font-bold text-slate-100 text-base">${course.title}</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">${course.description || 'No description provided.'}</p>
-                        <div class="flex gap-3 mt-2">
-                            <span class="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">${course.ceu_credits || 0} CEU Credits</span>
-                            <span class="text-xs text-slate-400">${course.lessons ? course.lessons.length : 0} Lessons</span>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="window.deleteCourse(${course.id})" class="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded text-xs font-semibold transition">Delete Course</button>
-            </div>
+    const { data: allLessons } = await supabase.from('lessons').select('*');
 
-            <!-- Lessons Section -->
-            <div class="border-t border-slate-800 pt-3">
-                <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Published Lessons</h4>
-                <div class="space-y-2">
-                    ${course.lessons && course.lessons.length > 0 ? course.lessons.map(l => `
-                        <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 text-xs">
-                            <span class="text-slate-200">📄 [${l.lesson_type.toUpperCase()}]${l.title}</span>
-                            <div class="flex gap-3">
-                                <a href="${l.content_url}" target="_blank" class="text-blue-400 hover:underline">View Asset</a>
-                                <button onclick="window.deleteLesson(${l.id})" class="text-red-400 hover:underline">Remove</button>
+    container.innerHTML = courses.map(course => {
+        const courseLessons = allLessons ? allLessons.filter(l => l.course_id === course.id) : [];
+        return `
+            <div class="bg-slate-900 p-5 rounded-xl border border-slate-700 space-y-4">
+                <div class="flex justify-between items-start flex-wrap gap-4">
+                    <div class="flex gap-4 items-center">
+                        ${course.thumbnail_url ? `<img src="${course.thumbnail_url}" alt="${course.title}" class="w-16 h-16 rounded-lg object-cover border border-slate-700">` : ''}
+                        <div>
+                            <h3 class="font-bold text-slate-100 text-base">${course.title}</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">${course.description || 'No description provided.'}</p>
+                            <div class="flex gap-3 mt-2">
+                                <span class="text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded">${course.ceu_credits || 0} CEU Credits</span>
+                                <span class="text-xs text-slate-400">${courseLessons.length} Lessons</span>
                             </div>
                         </div>
-                    `).join('') : '<p class="text-xs text-slate-500 italic">No lessons added to this course yet.</p>'}
+                    </div>
+                    <button onclick="window.deleteCourse(${course.id})" class="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded text-xs font-semibold transition">Delete Course</button>
                 </div>
 
-                <!-- Add Lesson Inline Form -->
-                <form onsubmit="window.handleUploadLesson(event, ${course.id})" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
-                    <input type="text" id="lesson-title-${course.id}" placeholder="Lesson Title" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
-                    <select id="lesson-type-${course.id}" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
-                        <option value="video">Video (MP4)</option>
-                        <option value="pdf">PDF Document / Flipbook</option>
-                        <option value="scorm">SCORM Package (ZIP)</option>
-                    </select>
-                    <input type="file" id="lesson-file-${course.id}" required class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
-                    <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">Add Module</button>
-                </form>
+                <!-- Lessons Section -->
+                <div class="border-t border-slate-800 pt-3">
+                    <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Published Lessons</h4>
+                    <div class="space-y-2">
+                        ${courseLessons.length > 0 ? courseLessons.map(l => `
+                            <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700 text-xs">
+                                <span class="text-slate-200">📄 [${l.lesson_type.toUpperCase()}] ${l.title}</span>
+                                <div class="flex gap-3">
+                                    <a href="${l.content_url}" target="_blank" class="text-blue-400 hover:underline">View Asset</a>
+                                    <button onclick="window.deleteLesson(${l.id})" class="text-red-400 hover:underline">Remove</button>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-xs text-slate-500 italic">No lessons added to this course yet.</p>'}
+                    </div>
+
+                    <!-- Add Lesson Inline Form -->
+                    <form onsubmit="window.handleUploadLesson(event, ${course.id})" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+                        <input type="text" id="lesson-title-${course.id}" placeholder="Lesson Title" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
+                        <select id="lesson-type-${course.id}" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
+                            <option value="video">Video (MP4)</option>
+                            <option value="pdf">PDF Document / Flipbook</option>
+                            <option value="scorm">SCORM Package (ZIP)</option>
+                        </select>
+                        <input type="file" id="lesson-file-${course.id}" required class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
+                        <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">Add Module</button>
+                    </form>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Create Course Form Handler
@@ -251,7 +256,6 @@ document.getElementById('provision-student-form').addEventListener('submit', asy
     const state = document.getElementById('prov-state').value;
     const zip = document.getElementById('prov-zip').value;
 
-    // 1. Create Supabase Auth User
     const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
     if (authError) {
         errorBox.textContent = 'Auth Error: ' + authError.message;
@@ -261,7 +265,6 @@ document.getElementById('provision-student-form').addEventListener('submit', asy
 
     const userId = authData.user.id;
 
-    // 2. Insert Profile Record
     const { error: profileError } = await supabase.from('profiles').upsert([{
         id: userId, email, role: 'student', unique_identifier, first_name, last_name, phone, street_address, street_address_2, city, state, zip
     }]);
@@ -272,7 +275,6 @@ document.getElementById('provision-student-form').addEventListener('submit', asy
         return;
     }
 
-    // 3. Insert Agent Licenses
     const agentRows = document.querySelectorAll('.agent-row');
     for (let row of agentRows) {
         const agent_id = row.querySelector('.agent-id-input').value;
@@ -280,7 +282,6 @@ document.getElementById('provision-student-form').addEventListener('submit', asy
         await supabase.from('student_agent_licenses').insert([{ user_id: userId, agent_id, agent_state }]);
     }
 
-    // 4. Insert Organizations
     const orgRows = document.querySelectorAll('.org-row');
     for (let row of orgRows) {
         const org_name = row.querySelector('.org-name-input').value;
@@ -293,7 +294,7 @@ document.getElementById('provision-student-form').addEventListener('submit', asy
         await supabase.from('student_organizations').insert([{ user_id: userId, org_name, org_phone, org_street, org_street_2, org_city, org_state, org_zip }]);
     }
 
-    successBox.textContent = `Student ${first_name} ${last_name} (ID: ${unique_identifier}) successfully provisioned!`;
+    successBox.textContent = `Student ${first_name} ${last_name} (ID:${unique_identifier}) successfully provisioned!`;
     successBox.classList.remove('hidden');
     document.getElementById('provision-student-form').reset();
     loadDashboardStats();
@@ -335,7 +336,7 @@ window.exportComplianceCSV = function() {
 
     let csv = 'Student First Name,Student Last Name,Unique Student ID,Course Completed,CEUs,Date Completed\n';
     complianceRecords.forEach(c => {
-        csv += `"${c.profiles?.first_name || ''}","${c.profiles?.last_name || ''}","${c.profiles?.unique_identifier || ''}","${c.courses?.title || ''}","${c.courses?.ceu_credits || 0}","${new Date(c.completed_at).toLocaleDateString()}"\n`;
+        csv += `"${c.profiles?.first_name \vert{}\vert{} ''}","${c.profiles?.last_name || ''}","${c.profiles?.unique_identifier \vert{}\vert{} ''}","${c.courses?.title || ''}","${c.courses?.ceu_credits \vert{}\vert{} 0}","${new Date(c.completed_at).toLocaleDateString()}"\n`;
     });
 
     const blob = new Blob([csv], { type: 'text/csv' });
