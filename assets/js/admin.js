@@ -98,7 +98,7 @@ async function fetchAdminCourses() {
                             <select id="lesson-type-${course.id}" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
                                 <option value="video">Video (MP4)</option>
                                 <option value="pdf">PDF Document / Flipbook</option>
-                                <option value="scorm">SCORM Package (ZIP)</option>
+                                <option value="scorm">SCORM Package / HTML5</option>
                             </select>
                             <input type="file" id="lesson-file-${course.id}" required class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
                             <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">Add Module</button>
@@ -221,8 +221,8 @@ window.addOrgRow = function() {
                 <input type="text" required class="org-name-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="Agency or Company Name">
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Org Phone ((###) ###-####)</label>
-                <input type="text" required pattern="\\(\\d{3}\\) \\d{3}-\\d{4}" class="org-phone-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="(555) 987-6543">
+                <label class="block text-xs font-medium text-slate-400 mb-1">Org Phone</label>
+                <input type="text" required class="org-phone-input w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-100" placeholder="e.g. 555-987-6543">
             </div>
             <div>
                 <label class="block text-xs font-medium text-slate-400 mb-1">Org Street Address</label>
