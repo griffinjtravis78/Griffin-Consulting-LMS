@@ -199,7 +199,7 @@ window.handleUploadLesson = async function(e, courseId) {
 
                 if (!storageErr && (lowerPath === 'index.html' || lowerPath.endsWith('/index.html'))) {
                     const { data: publicUrlData } = supabase.storage.from('lms-content').getPublicUrl(storagePath);
-                    // Use Supabase render route to ensure browser executes HTML interactively
+                    // Automatically convert standard public endpoint to Supabase render route
                     indexHtmlPath = publicUrlData.publicUrl.replace('/object/public/', '/object/render/public/');
                 }
             }
