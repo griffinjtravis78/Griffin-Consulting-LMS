@@ -93,15 +93,15 @@ async function fetchAdminCourses() {
                             `).join('') : '<p class="text-xs text-slate-500 italic">No lessons added to this course yet.</p>'}
                         </div>
 
-                        <!-- Add Lesson Inline Form -->
+                        <!-- Add Lesson Inline Form (Netlify URL Workflow) -->
                         <form onsubmit="window.handleUploadLesson(event, ${course.id})" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
                             <input type="text" id="lesson-title-${course.id}" placeholder="Lesson Title" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
                             <select id="lesson-type-${course.id}" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
-                                <option value="video">Video (MP4)</option>
-                                <option value="pdf">PDF Document / Flipbook</option>
-                                <option value="scorm">SCORM Package / HTML5 (ZIP)</option>
+                                <option value="scorm">SCORM / HTML5 (Netlify URL)</option>
+                                <option value="video">Video (MP4 URL)</option>
+                                <option value="pdf">PDF Document (URL)</option>
                             </select>
-                            <input type="file" id="lesson-file-${course.id}" required class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
+                            <input type="text" id="lesson-url-${course.id}" placeholder="Paste Netlify URL (https://...)" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
                             <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">Add Module</button>
                         </form>
                     </div>
@@ -150,89 +150,25 @@ window.deleteCourse = async function(courseId) {
     else { loadDashboardStats(); fetchAdminCourses(); }
 };
 
-// Automated Lesson & SCORM ZIP Extractor Handler
+// Streamlined Lesson URL Handler for Netlify / Static Hosting
 window.handleUploadLesson = async function(e, courseId) {
     e.preventDefault();
     const title = document.getElementById(`lesson-title-${courseId}`).value;
     const lesson_type = document.getElementById(`lesson-type-${courseId}`).value;
-    const fileInput = document.getElementById(`lesson-file-${courseId}`);
-    const file = fileInput.files[0];
+    const urlInput = document.getElementById(`lesson-url-${courseId}`);
+    const content_url = urlInput.value.trim();
 
-    if (!file) return alert('Please select a file to upload.');
-
-    let content_url = '';
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-
-    if (lesson_type === 'scorm' && file.name.endsWith('.zip')) {
-        try {
-            submitBtn.textContent = 'Unpacking & Uploading SCORM...';
-            submitBtn.disabled = true;
-
-            const zip = new JSZip();
-            const zipContent = await zip.loadAsync(file);
-            const folderTimestamp = Date.now();
-            let indexHtmlPath = '';
-
-            for (const [relativePath, zipEntry] of Object.entries(zipContent.files)) {
-                if (zipEntry.dir) continue;
-
-                const fileData = await zipEntry.async('blob');
-                const storagePath = `courses/${courseId}/scorm_${folderTimestamp}/${relativePath}`;
-                
-                let contentType = 'application/octet-stream';
-                const lowerPath = relativePath.toLowerCase();
-                if (lowerPath.endsWith('.html') || lowerPath.endsWith('.htm')) contentType = 'text/html';
-                else if (lowerPath.endsWith('.css')) contentType = 'text/css';
-                else if (lowerPath.endsWith('.js')) contentType = 'application/javascript';
-                else if (lowerPath.endsWith('.png')) contentType = 'image/png';
-                else if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) contentType = 'image/jpeg';
-                else if (lowerPath.endsWith('.svg')) contentType = 'image/svg+xml';
-                else if (lowerPath.endsWith('.json')) contentType = 'application/json';
-
-                const { error: storageErr } = await supabase.storage
-                    .from('lms-content')
-                    .upload(storagePath, fileData, { 
-                        upsert: true,
-                        contentType: contentType 
-                    });
-
-                if (!storageErr && (lowerPath === 'index.html' || lowerPath.endsWith('/index.html'))) {
-                    const { data: publicUrlData } = supabase.storage.from('lms-content').getPublicUrl(storagePath);
-                    // Use the correct Supabase render route path
-                    indexHtmlPath = publicUrlData.publicUrl.replace('/storage/v1/object/public/', '/storage/v1/render/public/');
-                }
-            }
-
-            if (!indexHtmlPath) {
-                throw new Error('Could not find index.html in the SCORM package root directory.');
-            }
-
-            content_url = indexHtmlPath;
-        } catch (err) {
-            alert('SCORM Unpack Error: ' + err.message);
-            submitBtn.textContent = 'Add Module';
-            submitBtn.disabled = false;
-            return;
-        }
-    } else {
-        const filePath = `courses/${courseId}/${Date.now()}_${file.name}`;
-        const { error: uploadError } = await supabase.storage.from('lms-content').upload(filePath, file);
-
-        if (uploadError) {
-            alert('Upload failed: ' + uploadError.message);
-            submitBtn.textContent = 'Add Module';
-            submitBtn.disabled = false;
-            return;
-        }
-
-        const { data: urlData } = supabase.storage.from('lms-content').getPublicUrl(filePath);
-        content_url = urlData.publicUrl;
+    if (!content_url) {
+        alert('Please provide a valid content URL.');
+        return;
     }
 
-    const { error: dbError } = await supabase.from('lessons').insert([{ course_id: courseId, title, lesson_type, content_url }]);
-    
-    submitBtn.textContent = 'Add Module';
-    submitBtn.disabled = false;
+    const { error: dbError } = awaitヂストン supabase.from('lessons').insert([{ 
+        course_id: courseId, 
+        title, 
+        lesson_type, 
+        content_url 
+    }]);
 
     if (dbError) {
         alert('Error saving lesson record: ' + dbError.message);
