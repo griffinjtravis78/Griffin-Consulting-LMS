@@ -98,7 +98,7 @@ async function fetchAdminCourses() {
                             <select id="lesson-type-${course.id}" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
                                 <option value="video">Video (MP4)</option>
                                 <option value="pdf">PDF Document / Flipbook</option>
-                                <option value="scorm">SCORM Package / HTML5</option>
+                                <option value="scorm">SCORM Package / HTML5 (ZIP)</option>
                             </select>
                             <input type="file" id="lesson-file-${course.id}" required class="text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
                             <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold transition">Add Module</button>
@@ -149,6 +149,7 @@ window.deleteCourse = async function(courseId) {
     else { loadDashboardStats(); fetchAdminCourses(); }
 };
 
+// AUTOMATED LESSON & SCORM ZIP EXTRACTOR HANDLER
 window.handleUploadLesson = async function(e, courseId) {
     e.preventDefault();
     const title = document.getElementById(`lesson-title-${courseId}`).value;
@@ -158,18 +159,67 @@ window.handleUploadLesson = async function(e, courseId) {
 
     if (!file) return alert('Please select a file to upload.');
 
-    const filePath = `courses/${courseId}/${Date.now()}_${file.name}`;
-    const { error: uploadError } = await supabase.storage.from('lms-content').upload(filePath, file);
+    let content_url = '';
+    const submitBtn = e.target.querySelector('button[type="submit"]');
 
-    if (uploadError) {
-        alert('Upload failed: ' + uploadError.message);
-        return;
+    // If it's a SCORM zip package, automatically unpack it and upload its contents
+    if (lesson_type === 'scorm' && file.name.endsWith('.zip')) {
+        try {
+            submitBtn.textContent = 'Unpacking & Uploading SCORM...';
+            submitBtn.disabled = true;
+
+            const zip = new JSZip();
+            const zipContent = await zip.loadAsync(file);
+            const folderTimestamp = Date.now();
+            let indexHtmlPath = '';
+
+            // Loop through every file inside the zip and upload to Supabase Storage
+            for (const [relativePath, zipEntry] of Object.entries(zipContent.files)) {
+                if (zipEntry.dir) continue;
+
+                const fileData = await zipEntry.async('blob');
+                const storagePath = `courses/${courseId}/scorm_${folderTimestamp}/${relativePath}`;
+                
+                const { error: storageErr } = await supabase.storage
+                    .from('lms-content')
+                    .upload(storagePath, fileData, { upsert: true });
+
+                if (!storageErr && (relativePath.toLowerCase() === 'index.html' || relativePath.toLowerCase().endsWith('/index.html'))) {
+                    const { data: publicUrlData } = supabase.storage.from('lms-content').getPublicUrl(storagePath);
+                    indexHtmlPath = publicUrlData.publicUrl;
+                }
+            }
+
+            if (!indexHtmlPath) {
+                throw new Error('Could not find index.html in the SCORM package root directory.');
+            }
+
+            content_url = indexHtmlPath;
+        } catch (err) {
+            alert('SCORM Unpack Error: ' + err.message);
+            submitBtn.textContent = 'Add Module';
+            submitBtn.disabled = false;
+            return;
+        }
+    } else {
+        // Standard upload for MP4 or PDF
+        const filePath = `courses/${courseId}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from('lms-content').upload(filePath, file);
+
+        if (uploadError) {
+            alert('Upload failed: ' + uploadError.message);
+            return;
+        }
+
+        const { data: urlData } = supabase.storage.from('lms-content').getPublicUrl(filePath);
+        content_url = urlData.publicUrl;
     }
 
-    const { data: urlData } = supabase.storage.from('lms-content').getPublicUrl(filePath);
-    const content_url = urlData.publicUrl;
-
     const { error: dbError } = await supabase.from('lessons').insert([{ course_id: courseId, title, lesson_type, content_url }]);
+    
+    submitBtn.textContent = 'Add Module';
+    submitBtn.disabled = false;
+
     if (dbError) {
         alert('Error saving lesson record: ' + dbError.message);
     } else {
