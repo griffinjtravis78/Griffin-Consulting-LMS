@@ -123,7 +123,19 @@ window.playLesson = function(type, url, title) {
     } else if (type === 'pdf') {
         mediaElement = `<iframe src="${url}" class="w-full h-[500px] rounded-lg border border-slate-700"></iframe>`;
     } else {
-        mediaElement = `<div class="p-4 bg-slate-900 rounded-lg border border-slate-700 text-center"><p class="text-sm text-slate-300 mb-2">SCORM Package or Downloadable Asset</p><a href="${url}" target="_blank" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold inline-block">Download / Open Package</a></div>`;
+        // Option B: SCORM / HTML5 Interactive Course Player & Viewer
+        mediaElement = `
+            <div class="bg-slate-900 rounded-lg border border-slate-700 overflow-hidden">
+                <div class="p-3 bg-slate-800 border-b border-slate-700 flex justify-between items-center text-xs">
+                    <span class="font-semibold text-blue-400">Interactive SCORM / HTML5 Player</span>
+                    <div class="flex gap-2">
+                        <a href="${url}" target="_blank" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-semibold">Open in Full Window ↗</a>
+                        <a href="${url}" download class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded font-semibold">Download Archive</a>
+                    </div>
+                </div>
+                <iframe src="${url}" class="w-full h-[500px] bg-white border-0"></iframe>
+            </div>
+        `;
     }
 
     box.innerHTML = `
@@ -229,7 +241,7 @@ document.getElementById('update-profile-form').addEventListener('submit', async 
 
     if (error) {
         errorBox.textContent = 'Error updating profile: ' + error.message;
-        errorBox.classList.remove('hidden');
+        errorBox.classList.add('hidden');
     } else {
         successBox.textContent = 'Profile successfully updated! Immutable audit ledger entry recorded.';
         successBox.classList.remove('hidden');
