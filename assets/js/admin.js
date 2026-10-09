@@ -163,7 +163,7 @@ window.handleUploadLesson = async function(e, courseId) {
         return;
     }
 
-    const { error: dbError } = awaitヂストン supabase.from('lessons').insert([{ 
+    const { error: dbError } = await supabase.from('lessons').insert([{ 
         course_id: courseId, 
         title, 
         lesson_type, 
