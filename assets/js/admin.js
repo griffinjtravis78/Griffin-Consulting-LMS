@@ -96,7 +96,7 @@ async function fetchAdminCourses() {
                         <!-- Add Lesson Inline Form (Hybrid URL & File Upload Workflow) -->
                         <form onsubmit="window.handleUploadLesson(event, ${course.id})" class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-2">
                             <input type="text" id="lesson-title-${course.id}" placeholder="Lesson Title" required class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
-                            <select id="lesson-type-${course.id}" onchange="window.toggleLessonInput(${course.id})" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
+                            <select id="lesson-type-${course.id}" onchange="window.toggleLessonInput(${course.id}, this.value)" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">
                                 <option value="scorm">SCORM / HTML5 (Netlify URL)</option>
                                 <option value="video">Video (MP4 URL)</option>
                                 <option value="pdf">PDF Document (File Upload)</option>
@@ -117,11 +117,10 @@ async function fetchAdminCourses() {
 }
 
 // Dynamic Input Toggle between URL and File Upload
-window.toggleLessonInput = function(courseId) {
-    const typeSelect = document.getElementById(`lesson-type-${courseId}`);
+window.toggleLessonInput = function(courseId, selectedType) {
     const container = document.getElementById(`lesson-input-container-${courseId}`);
     
-    if (typeSelect.value === 'pdf') {
+    if (selectedType === 'pdf') {
         container.innerHTML = `<input type="file" id="lesson-file-${courseId}" accept=".pdf" required class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500">`;
     } else {
         container.innerHTML = `<input type="text" id="lesson-url-${courseId}" placeholder="Paste Netlify URL (https://...)" required class="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded text-xs text-slate-100">`;
